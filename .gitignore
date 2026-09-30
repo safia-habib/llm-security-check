@@ -21,6 +21,8 @@ uv.lock
 .env
 .env.local
 .env.production
+# Exception: fixture .env files contain only synthetic/fake keys for testing
+!tests/fixtures/**/.env
 
 # pytest
 .pytest_cache/

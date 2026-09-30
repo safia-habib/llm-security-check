@@ -1,0 +1,11 @@
+{
+  "_comment": "SYNTHETIC TEST FILE — fake credentials for scanner testing. Not real keys.",
+  "apiKey": "sk-FAKE00000000000000000000000000000000000000000FAKE",
+  "anthropicKey": "sk-ant-api03-FAKE0000000000000000000000000000000000000000000000000000000000000000FAKE",
+  "geminiKey": "AIzaFAKE000000000000000000000000FAKE000",
+  "model": "gpt-4o",
+  "temperature": 0.7,
+  "maxTokens": 2048,
+  "endpoint": "https://api.openai.com/v1",
+  "anthropicEndpoint": "https://api.anthropic.com/v1"
+}

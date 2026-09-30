@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Acme AI Chat (Secure)</title>
+  <meta http-equiv="Content-Security-Policy"
+        content="default-src 'self'; script-src 'self'; connect-src 'self'" />
+  <meta name="referrer" content="strict-origin-when-cross-origin" />
+</head>
+<body>
+  <h1>Acme AI Chat</h1>
+  <p>Your intelligent assistant — securely powered via a backend proxy.</p>
+  <nav>
+    <a href="/about.html">About</a>
+  </nav>
+
+  <div id="chat-container">
+    <div id="messages"></div>
+    <input type="text" id="user-input" placeholder="Ask me anything..." />
+    <button onclick="sendMessage()">Send</button>
+  </div>
+
+  <script src="/assets/index.js"></script>
+</body>
+</html>

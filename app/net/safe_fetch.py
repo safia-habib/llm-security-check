@@ -15,6 +15,7 @@ Protection layers, in order:
 
 import asyncio
 import ipaddress
+import logging
 import socket
 from dataclasses import dataclass, field
 from urllib.parse import urljoin, urlparse
@@ -22,6 +23,8 @@ from urllib.parse import urljoin, urlparse
 import httpx
 
 from app.config import get_settings
+
+logger = logging.getLogger(__name__)
 
 # ---------------------------------------------------------------------------
 # Constants
@@ -172,8 +175,28 @@ async def safe_fetch(url: str, *, method: str = "GET") -> FetchResult:
     """
     settings = get_settings()
 
-    _, hostname, _ = _validate_url(url)
-    await _check_host(hostname)
+    if settings.allow_private_targets:
+        # Local dev / test mode only.  Scheme is still enforced; everything
+        # else (port, IP blocklist) is skipped.  The startup warning in
+        # main.py ensures this is never silently enabled in production.
+        logger.warning(
+            "ALLOW_PRIVATE_TARGETS=true: SSRF protection bypassed for %s %s",
+            method,
+            url,
+        )
+        try:
+            _parsed = urlparse(url)
+            _scheme = (_parsed.scheme or "").lower()
+        except Exception as exc:
+            raise SSRFError(f"Malformed URL {url!r}") from exc
+        if _scheme not in _ALLOWED_SCHEMES:
+            raise SSRFError(
+                f"Scheme {_scheme!r} is not permitted. "
+                f"Only {sorted(_ALLOWED_SCHEMES)} are allowed."
+            )
+    else:
+        _, hostname, _ = _validate_url(url)
+        await _check_host(hostname)
 
     ua_headers = {"User-Agent": settings.user_agent}
     timeout = httpx.Timeout(settings.request_timeout_seconds)
@@ -203,9 +226,10 @@ async def safe_fetch(url: str, *, method: str = "GET") -> FetchResult:
                 # Resolve relative Location header against the current URL
                 next_url = urljoin(current_url, location)
 
-                # Re-run all safety checks on every redirect hop
-                _, next_host, _ = _validate_url(next_url)
-                await _check_host(next_host)
+                # Re-run safety checks on every redirect hop
+                if not settings.allow_private_targets:
+                    _, next_host, _ = _validate_url(next_url)
+                    await _check_host(next_host)
 
                 current_url = next_url
                 redirects_followed += 1
