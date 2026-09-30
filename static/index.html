@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>LLM Security Check</title>
+  <style>
+    :root {
+      --bg: #0f1117;
+      --surface: #1a1d27;
+      --border: #2a2d3a;
+      --text: #e2e4ed;
+      --text-muted: #7a7f99;
+      --accent: #5b8dee;
+      --accent-dim: #3a5fa8;
+      --critical: #e05252;
+      --high: #e08c3a;
+      --medium: #d4c24a;
+      --low: #5ba85b;
+      --info: #5b8dee;
+    }
+    @media (prefers-color-scheme: light) {
+      :root {
+        --bg: #f5f6fa;
+        --surface: #ffffff;
+        --border: #d0d3e0;
+        --text: #1a1d27;
+        --text-muted: #6b7090;
+        --accent: #3a5fa8;
+        --accent-dim: #5b8dee;
+      }
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: system-ui, -apple-system, sans-serif;
+      font-size: 16px;
+      line-height: 1.6;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    header {
+      border-bottom: 1px solid var(--border);
+      padding: 1.5rem 1rem;
+      text-align: center;
+    }
+    header h1 { font-size: 1.6rem; font-weight: 700; color: var(--text); }
+    header p { color: var(--text-muted); margin-top: 0.25rem; font-size: 0.95rem; }
+
+    main {
+      flex: 1;
+      max-width: 680px;
+      margin: 3rem auto;
+      padding: 0 1rem;
+      width: 100%;
+    }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 2rem;
+    }
+
+    .badge {
+      display: inline-block;
+      background: var(--accent-dim);
+      color: var(--accent);
+      font-size: 0.7rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      padding: 0.15rem 0.5rem;
+      border-radius: 4px;
+      margin-bottom: 1rem;
+    }
+
+    .card h2 { font-size: 1.15rem; margin-bottom: 0.5rem; }
+    .card p  { color: var(--text-muted); font-size: 0.9rem; margin-bottom: 1.25rem; }
+
+    label {
+      display: block;
+      font-size: 0.85rem;
+      font-weight: 600;
+      margin-bottom: 0.4rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    input[type="url"] {
+      width: 100%;
+      padding: 0.75rem 1rem;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      color: var(--text);
+      font-size: 1rem;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+    input[type="url"]:focus { border-color: var(--accent); }
+
+    .checkbox-row {
+      display: flex;
+      align-items: flex-start;
+      gap: 0.6rem;
+      margin-top: 1rem;
+      font-size: 0.875rem;
+      color: var(--text-muted);
+    }
+    .checkbox-row input[type="checkbox"] { margin-top: 3px; flex-shrink: 0; }
+
+    button[type="submit"] {
+      margin-top: 1.5rem;
+      width: 100%;
+      padding: 0.8rem;
+      background: var(--accent);
+      color: #fff;
+      font-size: 1rem;
+      font-weight: 600;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    button[type="submit"]:hover { background: var(--accent-dim); }
+    button[type="submit"]:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    .notice {
+      margin-top: 1.5rem;
+      padding: 0.9rem 1rem;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      font-size: 0.82rem;
+      color: var(--text-muted);
+    }
+
+    footer {
+      border-top: 1px solid var(--border);
+      padding: 1.25rem 1rem;
+      text-align: center;
+      font-size: 0.8rem;
+      color: var(--text-muted);
+    }
+    footer a { color: var(--accent); text-decoration: none; }
+    footer a:hover { text-decoration: underline; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>LLM Security Check</h1>
+    <p>Find exposed API keys and LLM security mistakes in your web app — before attackers do.</p>
+  </header>
+
+  <main>
+    <div class="card">
+      <span class="badge">Development build</span>
+      <h2>Scan your application</h2>
+      <p>
+        Paste the URL of an app you own. The scanner crawls its public surface,
+        finds exposed LLM provider keys and common architecture mistakes, and
+        explains what an attacker could do with each finding.
+      </p>
+
+      <form id="scan-form" autocomplete="off">
+        <label for="target-url">Application URL</label>
+        <input
+          type="url"
+          id="target-url"
+          name="target_url"
+          placeholder="https://my-app.vercel.app"
+          autofocus
+          required
+        />
+
+        <div class="checkbox-row">
+          <input type="checkbox" id="owns-target" name="owns_target" />
+          <label for="owns-target" style="text-transform:none; letter-spacing:0; font-weight:400;">
+            I own this application or have written permission to test it.
+          </label>
+        </div>
+
+        <div class="checkbox-row">
+          <input type="checkbox" id="third-party" name="include_third_party" />
+          <label for="third-party" style="text-transform:none; letter-spacing:0; font-weight:400;">
+            Also scan third-party scripts (CDN resources referenced by this app).
+          </label>
+        </div>
+
+        <button type="submit" id="scan-btn" disabled>Scan</button>
+      </form>
+
+      <div class="notice">
+        <strong>Passive scan only.</strong> This tool sends read-only requests (GET and HEAD).
+        It never submits forms, never sends prompts to discovered AI endpoints, and never
+        tests or stores discovered keys. A clean report is not a guarantee of security —
+        see the footer for what cannot be checked.
+      </div>
+    </div>
+  </main>
+
+  <footer>
+    <p>
+      Authorised use only — scan only apps you own or have written permission to test. &nbsp;|&nbsp;
+      <a href="/api/rules">Detection rules</a> &nbsp;|&nbsp;
+      <a href="/api/health">Health</a>
+    </p>
+    <p style="margin-top:0.4rem;">
+      Passive scan &mdash; keys are never tested or stored &mdash; findings expire from memory after 30 minutes.
+    </p>
+  </footer>
+
+  <script>
+    (() => {
+      const form = document.getElementById('scan-form');
+      const urlInput = document.getElementById('target-url');
+      const ownsCheck = document.getElementById('owns-target');
+      const scanBtn = document.getElementById('scan-btn');
+
+      function updateBtn() {
+        const urlOk = urlInput.value.trim().length > 0;
+        const checked = ownsCheck.checked;
+        scanBtn.disabled = !(urlOk && checked);
+      }
+
+      urlInput.addEventListener('input', updateBtn);
+      ownsCheck.addEventListener('change', updateBtn);
+
+      form.addEventListener('submit', (e) => {
+        e.preventDefault();
+        // Wired up in Phase 8
+        alert('Scan functionality coming soon. The API backend is ready at /api/scan.');
+      });
+    })();
+  </script>
+</body>
+</html>
