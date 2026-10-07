@@ -22,7 +22,7 @@ class Settings(BaseSettings):
     rate_limit_per_hour: int = 5
     allow_private_targets: bool = False
     user_agent: str = (
-        "LLMSecurityCheck/1.0 (+https://github.com/placeholder/llm-security-check)"
+        "LLMSecurityCheck/1.0 (+https://github.com/safia_habib/llm-security-check)"
     )
 
 
