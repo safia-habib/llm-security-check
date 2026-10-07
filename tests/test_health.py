@@ -20,11 +20,9 @@ def test_health_private_targets_default_false(client: TestClient) -> None:
 
 
 def test_scan_without_attestation_rejected(client: TestClient) -> None:
-    """Ownership attestation: owns_target=false must be refused."""
+    """Ownership attestation: owns_target=false must be refused with 422."""
     resp = client.post(
         "/api/scan",
         json={"target_url": "https://example.com", "owns_target": False},
     )
-    # 501 for now (endpoint not implemented) but attestation validation
-    # will return 400 in Phase 7; either way it must not succeed.
-    assert resp.status_code in {400, 422, 501}
+    assert resp.status_code == 422

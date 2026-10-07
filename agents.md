@@ -234,10 +234,12 @@ Status values: `queued`, `running`, `complete`, `failed`, `rejected`.
 | 6 | Not started | attacks.py, report.py, models.py |
 | 7 | Not started | API routes, SSE, store, rate limiting, attestation |
 | 8 | Not started | Frontend (static/index.html) |
-| 9 | Not started | Dockerfile, README, .env.example, fly.toml, deploy |
-| 10 | Not started | Hardening pass |
+| 9 | ✅ Complete | Dockerfile, README, .env.example, fly.toml, deploy |
+| 10 | ✅ Complete | Hardening pass |
 
 **Rule:** finish and test each phase before starting the next. Run pytest after every phase and paste the summary line. Do not move on with a red suite.
+
+**Phase 10 final:** `195 passed, 0 failed` — `ruff check` clean.
 
 ---
 

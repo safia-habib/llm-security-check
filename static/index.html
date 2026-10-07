@@ -6,239 +6,427 @@
   <title>LLM Security Check</title>
   <style>
     :root {
-      --bg: #0f1117;
-      --surface: #1a1d27;
-      --border: #2a2d3a;
-      --text: #e2e4ed;
-      --text-muted: #7a7f99;
-      --accent: #5b8dee;
-      --accent-dim: #3a5fa8;
-      --critical: #e05252;
-      --high: #e08c3a;
-      --medium: #d4c24a;
-      --low: #5ba85b;
-      --info: #5b8dee;
+      --bg:#0f1117; --surface:#1a1d27; --border:#2a2d3a;
+      --text:#e2e4ed; --muted:#7a7f99;
+      --accent:#5b8dee; --accent-dim:#3a5fa8;
+      --critical:#e05252; --high:#e08c3a; --medium:#d4c24a;
+      --low:#5ba85b; --info:#5b8dee; --ok:#3aaf6a;
     }
-    @media (prefers-color-scheme: light) {
+    @media (prefers-color-scheme:light) {
       :root {
-        --bg: #f5f6fa;
-        --surface: #ffffff;
-        --border: #d0d3e0;
-        --text: #1a1d27;
-        --text-muted: #6b7090;
-        --accent: #3a5fa8;
-        --accent-dim: #5b8dee;
+        --bg:#f5f6fa; --surface:#fff; --border:#d0d3e0;
+        --text:#1a1d27; --muted:#6b7090;
+        --accent:#3a5fa8; --accent-dim:#5b8dee;
+        --critical:#c03030; --high:#b86020; --medium:#8a7a10;
+        --low:#2a7a2a; --ok:#1a8a3a;
       }
     }
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    body{background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,sans-serif;
+         font-size:16px;line-height:1.6;min-height:100vh;display:flex;flex-direction:column}
+    a{color:var(--accent);text-decoration:none} a:hover{text-decoration:underline}
+    header{border-bottom:1px solid var(--border);padding:1.25rem 1rem;text-align:center}
+    header h1{font-size:1.5rem;font-weight:700}
+    header p{color:var(--muted);font-size:0.9rem;margin-top:0.2rem}
+    main{flex:1;max-width:720px;margin:2rem auto;padding:0 1rem;width:100%}
+    footer{border-top:1px solid var(--border);padding:1rem;text-align:center;
+           font-size:0.8rem;color:var(--muted)}
+    footer p+p{margin-top:0.3rem}
+    [hidden]{display:none!important}
 
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    /* Card */
+    .card{background:var(--surface);border:1px solid var(--border);border-radius:10px;
+          padding:1.75rem;margin-bottom:1.25rem}
+    .card h2{font-size:1.1rem;margin-bottom:0.75rem}
 
-    body {
-      background: var(--bg);
-      color: var(--text);
-      font-family: system-ui, -apple-system, sans-serif;
-      font-size: 16px;
-      line-height: 1.6;
-      min-height: 100vh;
-      display: flex;
-      flex-direction: column;
-    }
+    /* Form */
+    .lbl{display:block;font-size:.78rem;font-weight:700;letter-spacing:.05em;
+         text-transform:uppercase;color:var(--muted);margin-bottom:.35rem}
+    input[type="url"]{width:100%;padding:.7rem .9rem;background:var(--bg);
+         border:1px solid var(--border);border-radius:6px;color:var(--text);
+         font-size:1rem;outline:none;transition:border-color .15s}
+    input[type="url"]:focus{border-color:var(--accent)}
+    .cbrow{display:flex;align-items:flex-start;gap:.6rem;margin-top:.85rem;
+           font-size:.875rem;color:var(--muted)}
+    .cbrow input{margin-top:3px;flex-shrink:0}
+    .btn{margin-top:1.25rem;width:100%;padding:.75rem;background:var(--accent);color:#fff;
+         font-size:1rem;font-weight:600;border:none;border-radius:6px;cursor:pointer;
+         transition:background .15s}
+    .btn:hover:not(:disabled){background:var(--accent-dim)}
+    .btn:disabled{opacity:.45;cursor:not-allowed}
+    .btn-sm{width:auto;padding:.4rem .9rem;font-size:.875rem;margin-top:0}
+    .notice{margin-top:1.25rem;padding:.8rem 1rem;background:var(--bg);
+            border:1px solid var(--border);border-radius:6px;font-size:.82rem;color:var(--muted)}
 
-    header {
-      border-bottom: 1px solid var(--border);
-      padding: 1.5rem 1rem;
-      text-align: center;
-    }
-    header h1 { font-size: 1.6rem; font-weight: 700; color: var(--text); }
-    header p { color: var(--text-muted); margin-top: 0.25rem; font-size: 0.95rem; }
+    /* Progress */
+    #prog-log{background:var(--bg);border:1px solid var(--border);border-radius:6px;
+              padding:.7rem 1rem;font-size:.8rem;color:var(--muted);font-family:monospace;
+              max-height:150px;overflow-y:auto}
+    #prog-log p{margin:.1rem 0}
+    .log-stage{color:var(--accent);font-weight:700}
+    .log-err{color:var(--critical)}
 
-    main {
-      flex: 1;
-      max-width: 680px;
-      margin: 3rem auto;
-      padding: 0 1rem;
-      width: 100%;
-    }
+    /* Summary */
+    .grade-row{display:flex;align-items:center;gap:1.5rem;flex-wrap:wrap}
+    .grade-letter{font-size:3.5rem;font-weight:900;line-height:1}
+    .gF{color:var(--critical)} .gD{color:var(--high)} .gC{color:var(--medium)}
+    .gB{color:var(--accent)} .gA{color:var(--ok)}
+    .grade-meta{font-size:.9rem;color:var(--muted)}
+    .grade-meta strong{color:var(--text);font-size:1.3rem}
+    .chips{display:flex;flex-wrap:wrap;gap:.5rem;margin-top:.9rem}
+    .chip{padding:.15rem .6rem;border-radius:20px;font-size:.75rem;font-weight:700}
+    .ch-c{background:#3a0f0f;color:var(--critical)} .ch-h{background:#3a2010;color:var(--high)}
+    .ch-m{background:#3a340f;color:var(--medium)} .ch-l{background:#0f3a1a;color:var(--low)}
+    .ch-i{background:#0f1d3a;color:var(--info)}
 
-    .card {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      padding: 2rem;
-    }
+    /* Finding cards */
+    .finding{border:1px solid var(--border);border-radius:8px;margin-bottom:1rem;overflow:hidden}
+    .fhdr{padding:.85rem 1rem;display:flex;align-items:center;gap:.55rem;flex-wrap:wrap}
+    .sbadge{font-size:.68rem;font-weight:800;letter-spacing:.07em;text-transform:uppercase;
+            padding:.12rem .5rem;border-radius:4px;flex-shrink:0}
+    .ftitle{font-weight:600;font-size:.95rem;flex:1;min-width:0}
+    .ctag{font-size:.7rem;color:var(--muted);flex-shrink:0}
+    .fbody{padding:0 1rem .5rem}
+    .ev{background:var(--bg);border:1px solid var(--border);border-radius:5px;
+        padding:.55rem .8rem;margin-bottom:.75rem;font-size:.8rem}
+    .ev-loc{color:var(--muted);word-break:break-all}
+    .ev-loc a{color:var(--accent)}
+    .ev-val{font-family:monospace;color:var(--critical);margin-top:.2rem;word-break:break-all}
+    .ev-ctx{font-family:monospace;font-size:.75rem;color:var(--muted);margin-top:.3rem;
+            white-space:pre-wrap;word-break:break-all}
+    details.sec{border-top:1px solid var(--border)}
+    details.sec summary{padding:.55rem 1rem;font-size:.85rem;font-weight:600;cursor:pointer;
+                         list-style:none;display:flex;justify-content:space-between;
+                         align-items:center;user-select:none}
+    details.sec summary::-webkit-details-marker{display:none}
+    details.sec summary::after{content:'▾';font-size:.68rem;color:var(--muted);transition:transform .15s}
+    details[open].sec summary::after{transform:rotate(180deg)}
+    details.sec .sb{padding:.5rem 1rem .9rem;font-size:.875rem;color:var(--muted)}
+    details.sec .sb p{margin-bottom:.4rem}
+    details.sec .sb ol{padding-left:1.3rem}
+    details.sec .sb li{margin-bottom:.3rem}
+    .atk{margin-bottom:.9rem;padding-bottom:.9rem;border-bottom:1px solid var(--border)}
+    .atk:last-child{border-bottom:none;margin-bottom:0;padding-bottom:0}
+    .atk-name{font-weight:700;color:var(--text);margin-bottom:.25rem}
+    .atk-app{font-style:italic;margin:.25rem 0;color:var(--muted)}
+    .atk-imp{font-size:.8rem;color:var(--critical)}
 
-    .badge {
-      display: inline-block;
-      background: var(--accent-dim);
-      color: var(--accent);
-      font-size: 0.7rem;
-      font-weight: 700;
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-      padding: 0.15rem 0.5rem;
-      border-radius: 4px;
-      margin-bottom: 1rem;
-    }
+    /* Severity colour tokens */
+    .sv-critical .sbadge{background:#3a0f0f;color:var(--critical)}
+    .sv-critical{border-left:3px solid var(--critical)}
+    .sv-high .sbadge{background:#3a2010;color:var(--high)}
+    .sv-high{border-left:3px solid var(--high)}
+    .sv-medium .sbadge{background:#3a340f;color:var(--medium)}
+    .sv-medium{border-left:3px solid var(--medium)}
+    .sv-low .sbadge{background:#0f3a1a;color:var(--low)}
+    .sv-low{border-left:3px solid var(--low)}
+    .sv-info .sbadge{background:#0f1d3a;color:var(--info)}
+    .sv-info{border-left:3px solid var(--info)}
 
-    .card h2 { font-size: 1.15rem; margin-bottom: 0.5rem; }
-    .card p  { color: var(--text-muted); font-size: 0.9rem; margin-bottom: 1.25rem; }
-
-    label {
-      display: block;
-      font-size: 0.85rem;
-      font-weight: 600;
-      margin-bottom: 0.4rem;
-      color: var(--text-muted);
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-    }
-
-    input[type="url"] {
-      width: 100%;
-      padding: 0.75rem 1rem;
-      background: var(--bg);
-      border: 1px solid var(--border);
-      border-radius: 6px;
-      color: var(--text);
-      font-size: 1rem;
-      outline: none;
-      transition: border-color 0.15s;
-    }
-    input[type="url"]:focus { border-color: var(--accent); }
-
-    .checkbox-row {
-      display: flex;
-      align-items: flex-start;
-      gap: 0.6rem;
-      margin-top: 1rem;
-      font-size: 0.875rem;
-      color: var(--text-muted);
-    }
-    .checkbox-row input[type="checkbox"] { margin-top: 3px; flex-shrink: 0; }
-
-    button[type="submit"] {
-      margin-top: 1.5rem;
-      width: 100%;
-      padding: 0.8rem;
-      background: var(--accent);
-      color: #fff;
-      font-size: 1rem;
-      font-weight: 600;
-      border: none;
-      border-radius: 6px;
-      cursor: pointer;
-      transition: background 0.15s;
-    }
-    button[type="submit"]:hover { background: var(--accent-dim); }
-    button[type="submit"]:disabled { opacity: 0.5; cursor: not-allowed; }
-
-    .notice {
-      margin-top: 1.5rem;
-      padding: 0.9rem 1rem;
-      background: var(--bg);
-      border: 1px solid var(--border);
-      border-radius: 6px;
-      font-size: 0.82rem;
-      color: var(--text-muted);
-    }
-
-    footer {
-      border-top: 1px solid var(--border);
-      padding: 1.25rem 1rem;
-      text-align: center;
-      font-size: 0.8rem;
-      color: var(--text-muted);
-    }
-    footer a { color: var(--accent); text-decoration: none; }
-    footer a:hover { text-decoration: underline; }
+    /* Error */
+    .err-msg{color:var(--critical);font-weight:600;margin-bottom:.75rem}
+    .scan-actions{display:flex;align-items:center;gap:1.25rem;margin-top:1rem;flex-wrap:wrap}
   </style>
 </head>
 <body>
   <header>
     <h1>LLM Security Check</h1>
-    <p>Find exposed API keys and LLM security mistakes in your web app — before attackers do.</p>
+    <p>Passive scanner for LLM-specific security mistakes — exposed keys, system prompts, misconfigured CORS.</p>
   </header>
 
   <main>
-    <div class="card">
-      <span class="badge">Development build</span>
-      <h2>Scan your application</h2>
-      <p>
-        Paste the URL of an app you own. The scanner crawls its public surface,
-        finds exposed LLM provider keys and common architecture mistakes, and
-        explains what an attacker could do with each finding.
-      </p>
-
-      <form id="scan-form" autocomplete="off">
-        <label for="target-url">Application URL</label>
-        <input
-          type="url"
-          id="target-url"
-          name="target_url"
-          placeholder="https://my-app.vercel.app"
-          autofocus
-          required
-        />
-
-        <div class="checkbox-row">
-          <input type="checkbox" id="owns-target" name="owns_target" />
-          <label for="owns-target" style="text-transform:none; letter-spacing:0; font-weight:400;">
-            I own this application or have written permission to test it.
-          </label>
+    <!-- FORM -->
+    <section id="s-form">
+      <div class="card">
+        <h2>Scan your application</h2>
+        <p style="color:var(--muted);font-size:.9rem;margin-bottom:1.1rem;">
+          Enter the public URL of an app you own. The scanner crawls its surface with
+          read-only requests and explains any issues it finds in plain English.
+        </p>
+        <form id="scan-form" autocomplete="off">
+          <label class="lbl" for="url-input">Application URL</label>
+          <input type="url" id="url-input" placeholder="https://my-app.vercel.app" required autofocus />
+          <div class="cbrow">
+            <input type="checkbox" id="cb-owns" />
+            <label for="cb-owns">I own this app or have written permission to test it.</label>
+          </div>
+          <div class="cbrow">
+            <input type="checkbox" id="cb-3p" />
+            <label for="cb-3p">Also scan third-party scripts (CDN resources).</label>
+          </div>
+          <button class="btn" id="scan-btn" type="submit" disabled>Scan</button>
+        </form>
+        <div class="notice">
+          <strong>Passive only.</strong> GET and HEAD requests only — no forms submitted,
+          no prompts sent to AI endpoints, no keys tested against providers.
+          Findings expire from memory after 30 minutes.
         </div>
-
-        <div class="checkbox-row">
-          <input type="checkbox" id="third-party" name="include_third_party" />
-          <label for="third-party" style="text-transform:none; letter-spacing:0; font-weight:400;">
-            Also scan third-party scripts (CDN resources referenced by this app).
-          </label>
-        </div>
-
-        <button type="submit" id="scan-btn" disabled>Scan</button>
-      </form>
-
-      <div class="notice">
-        <strong>Passive scan only.</strong> This tool sends read-only requests (GET and HEAD).
-        It never submits forms, never sends prompts to discovered AI endpoints, and never
-        tests or stores discovered keys. A clean report is not a guarantee of security —
-        see the footer for what cannot be checked.
       </div>
-    </div>
+    </section>
+
+    <!-- SCANNING -->
+    <section id="s-scan" hidden>
+      <div class="card">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.75rem">
+          <h2 id="scan-heading">Scanning…</h2>
+          <button class="btn btn-sm" id="cancel-btn" type="button">Cancel</button>
+        </div>
+        <div id="prog-log"></div>
+      </div>
+      <div id="live-findings"></div>
+    </section>
+
+    <!-- RESULTS -->
+    <section id="s-results" hidden>
+      <div class="card" id="summary-card"></div>
+      <div id="result-findings"></div>
+      <div class="scan-actions">
+        <button class="btn btn-sm" id="new-scan-btn" type="button">New scan</button>
+        <a id="md-link" href="#" target="_blank">Download report.md</a>
+      </div>
+    </section>
+
+    <!-- ERROR -->
+    <section id="s-error" hidden>
+      <div class="card">
+        <p class="err-msg" id="err-text">An error occurred.</p>
+        <button class="btn btn-sm" id="retry-btn" type="button">Try again</button>
+      </div>
+    </section>
   </main>
 
   <footer>
-    <p>
-      Authorised use only — scan only apps you own or have written permission to test. &nbsp;|&nbsp;
-      <a href="/api/rules">Detection rules</a> &nbsp;|&nbsp;
-      <a href="/api/health">Health</a>
-    </p>
-    <p style="margin-top:0.4rem;">
-      Passive scan &mdash; keys are never tested or stored &mdash; findings expire from memory after 30 minutes.
-    </p>
+    <p>Authorised use only — scan only apps you own or have written permission to test.</p>
+    <p><a href="/api/rules">Detection rules</a> &nbsp;|&nbsp; <a href="/api/health">Health</a></p>
   </footer>
 
   <script>
-    (() => {
-      const form = document.getElementById('scan-form');
-      const urlInput = document.getElementById('target-url');
-      const ownsCheck = document.getElementById('owns-target');
-      const scanBtn = document.getElementById('scan-btn');
+  (() => {
+    // ---- State ----
+    let scanId = null, evtSrc = null;
+    const allFindings = [];
 
-      function updateBtn() {
-        const urlOk = urlInput.value.trim().length > 0;
-        const checked = ownsCheck.checked;
-        scanBtn.disabled = !(urlOk && checked);
-      }
+    // ---- DOM refs ----
+    const $ = id => document.getElementById(id);
+    const urlInput  = $('url-input');
+    const cbOwns    = $('cb-owns');
+    const cb3p      = $('cb-3p');
+    const scanBtn   = $('scan-btn');
+    const progLog   = $('prog-log');
+    const liveFinds = $('live-findings');
+    const resFinds  = $('result-findings');
 
-      urlInput.addEventListener('input', updateBtn);
-      ownsCheck.addEventListener('change', updateBtn);
+    // ---- Section routing ----
+    const sections = ['s-form','s-scan','s-results','s-error'];
+    function show(id) { sections.forEach(s => $(s).hidden = s !== id); }
 
-      form.addEventListener('submit', (e) => {
-        e.preventDefault();
-        // Wired up in Phase 8
-        alert('Scan functionality coming soon. The API backend is ready at /api/scan.');
+    // ---- Button state ----
+    function sync() { scanBtn.disabled = !(urlInput.value.trim() && cbOwns.checked); }
+    urlInput.addEventListener('input', sync);
+    cbOwns.addEventListener('change', sync);
+
+    // ---- Log helpers ----
+    function log(msg, cls) {
+      const p = document.createElement('p');
+      if (cls) p.className = cls;
+      p.textContent = msg;
+      progLog.appendChild(p);
+      progLog.scrollTop = progLog.scrollHeight;
+    }
+
+    // ---- Escape HTML ----
+    function esc(s) {
+      return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    }
+
+    // ---- Render a finding card ----
+    function findingHTML(f) {
+      const sev = f.severity || 'info';
+      const ev  = f.evidence || {};
+      const locHref = (ev.location && ev.location.startsWith('http'))
+        ? `<a href="${esc(ev.location)}" target="_blank" rel="noopener">${esc(ev.location)}${ev.line ? ' :'+ev.line : ''}</a>`
+        : esc(ev.location || '');
+      const evHTML = `<div class="ev">
+        ${ev.location  ? `<div class="ev-loc">${locHref}</div>` : ''}
+        ${ev.redacted_value ? `<div class="ev-val">${esc(ev.redacted_value)}</div>` : ''}
+        ${ev.context   ? `<div class="ev-ctx">${esc(ev.context)}</div>` : ''}
+      </div>`;
+
+      const attacksHTML = (f.attacks||[]).map(a => `
+        <div class="atk">
+          <div class="atk-name">${esc(a.name)}</div>
+          <p>${esc(a.what_it_is)}</p>
+          <p class="atk-app">${esc(a.how_it_applies_here)}</p>
+          <p class="atk-imp">Impact: ${esc(a.impact)}</p>
+        </div>`).join('');
+
+      const remHTML = (f.remediation||[]).map(r=>`<li>${esc(r)}</li>`).join('');
+
+      const refsHTML = (f.references||[]).length
+        ? `<details class="sec"><summary>References</summary><div class="sb">${
+            (f.references).map(r=>`<p><a href="${esc(r.url)}" target="_blank" rel="noopener">${esc(r.label)}</a></p>`).join('')
+          }</div></details>` : '';
+
+      return `<div class="finding sv-${esc(sev)}">
+        <div class="fhdr">
+          <span class="sbadge">${esc(sev)}</span>
+          <span class="ftitle">${esc(f.title)}</span>
+          <span class="ctag">${esc(f.confidence||'')} confidence</span>
+        </div>
+        <div class="fbody">${evHTML}</div>
+        <details class="sec"><summary>Why it matters</summary>
+          <div class="sb"><p>${esc(f.why_it_matters)}</p></div></details>
+        ${(f.attacks||[]).length ? `<details class="sec"><summary>Attack scenarios (${f.attacks.length})</summary>
+          <div class="sb">${attacksHTML}</div></details>` : ''}
+        <details class="sec" open><summary>Remediation</summary>
+          <div class="sb"><ol>${remHTML}</ol></div></details>
+        ${refsHTML}
+      </div>`;
+    }
+
+    // ---- Render summary card ----
+    function summaryHTML(data, findings) {
+      const grade = data.grade || '?';
+      const score = data.score ?? 0;
+      const counts = {critical:0, high:0, medium:0, low:0, info:0};
+      findings.forEach(f => { if (counts[f.severity] !== undefined) counts[f.severity]++; });
+      const chipMap = { critical:'ch-c', high:'ch-h', medium:'ch-m', low:'ch-l', info:'ch-i' };
+      const chips = Object.entries(counts).filter(([,v])=>v>0)
+        .map(([k,v]) => `<span class="chip ${chipMap[k]}">${v} ${k}</span>`).join('');
+      return `
+        <div class="grade-row">
+          <div class="grade-letter g${esc(grade)}">${esc(grade)}</div>
+          <div class="grade-meta">
+            <div><strong>${score}</strong> / 100</div>
+            <div style="margin-top:.2rem">${esc(data.message||'Scan complete')}</div>
+          </div>
+        </div>
+        ${chips ? `<div class="chips">${chips}</div>` : '<p style="margin-top:.75rem;color:var(--ok);font-weight:600">No issues found.</p>'}`;
+    }
+
+    // ---- SSE handling ----
+    function openSSE(id) {
+      evtSrc = new EventSource(`/api/scan/${id}/stream`);
+
+      evtSrc.addEventListener('stage',   e => {
+        const d = JSON.parse(e.data);
+        log(d.message, 'log-stage');
       });
-    })();
+      evtSrc.addEventListener('progress', e => {
+        const d = JSON.parse(e.data);
+        log(d.message);
+      });
+      evtSrc.addEventListener('started', e => {
+        const d = JSON.parse(e.data);
+        log(d.message, 'log-stage');
+      });
+      evtSrc.addEventListener('finding', e => {
+        const d = JSON.parse(e.data);
+        const f = d.finding;
+        allFindings.push(f);
+        const div = document.createElement('div');
+        div.innerHTML = findingHTML(f);
+        liveFinds.appendChild(div.firstElementChild);
+      });
+      evtSrc.addEventListener('complete', e => {
+        const d = JSON.parse(e.data);
+        evtSrc.close(); evtSrc = null;
+        showResults(d);
+      });
+      evtSrc.addEventListener('failed', e => {
+        const d = JSON.parse(e.data);
+        evtSrc.close(); evtSrc = null;
+        showError(d.message || 'Scan failed');
+      });
+      evtSrc.onerror = () => {
+        // Connection dropped — poll for final status
+        evtSrc && evtSrc.close(); evtSrc = null;
+        pollFallback(id);
+      };
+    }
+
+    async function pollFallback(id) {
+      try {
+        const r = await fetch(`/api/scan/${id}`);
+        if (!r.ok) { showError('Could not retrieve scan results.'); return; }
+        const body = await r.json();
+        if (body.status === 'complete') {
+          if (body.findings) {
+            body.findings.forEach(f => { if (!allFindings.find(x=>x.id===f.id)) allFindings.push(f); });
+          }
+          showResults({ grade: body.summary?.grade, score: body.summary?.score,
+                        message: body.summary?.headline, findings_count: body.findings?.length });
+        } else if (body.status === 'failed') {
+          showError('Scan failed on the server.');
+        } else {
+          setTimeout(() => pollFallback(id), 2000);
+        }
+      } catch { showError('Lost connection to server.'); }
+    }
+
+    function showResults(data) {
+      $('scan-heading').textContent = 'Scan complete';
+      $('summary-card').innerHTML = summaryHTML(data, allFindings);
+      resFinds.innerHTML = allFindings.map(findingHTML).join('');
+      $('md-link').href = `/api/scan/${scanId}/report.md`;
+      show('s-results');
+    }
+
+    function showError(msg) {
+      $('err-text').textContent = msg;
+      show('s-error');
+    }
+
+    // ---- Cancel ----
+    $('cancel-btn').addEventListener('click', () => {
+      evtSrc && evtSrc.close(); evtSrc = null;
+      if (scanId) fetch(`/api/scan/${scanId}`, {method:'DELETE'}).catch(()=>{});
+      reset();
+    });
+
+    // ---- New scan / retry ----
+    function reset() {
+      scanId = null; allFindings.length = 0;
+      progLog.innerHTML = ''; liveFinds.innerHTML = ''; resFinds.innerHTML = '';
+      show('s-form');
+    }
+    $('new-scan-btn').addEventListener('click', reset);
+    $('retry-btn').addEventListener('click', reset);
+
+    // ---- Form submit ----
+    $('scan-form').addEventListener('submit', async e => {
+      e.preventDefault();
+      const url     = urlInput.value.trim();
+      const owns    = cbOwns.checked;
+      const thirdPa = cb3p.checked;
+
+      allFindings.length = 0;
+      progLog.innerHTML = ''; liveFinds.innerHTML = '';
+      show('s-scan');
+      $('scan-heading').textContent = 'Scanning…';
+      log('Starting scan for ' + url, 'log-stage');
+
+      try {
+        const resp = await fetch('/api/scan', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ target_url: url, owns_target: owns, include_third_party: thirdPa }),
+        });
+        if (resp.status === 429) { showError('Rate limit reached. Please wait an hour before scanning again.'); return; }
+        if (resp.status === 503) { showError('Server is busy. Please try again shortly.'); return; }
+        if (!resp.ok) {
+          const body = await resp.json().catch(() => ({}));
+          showError(body.message || body.detail || `Request failed (${resp.status})`);
+          return;
+        }
+        const { scan_id } = await resp.json();
+        scanId = scan_id;
+        openSSE(scan_id);
+      } catch (err) {
+        showError('Could not reach the server. Is the backend running?');
+      }
+    });
+  })();
   </script>
 </body>
 </html>

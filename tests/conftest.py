@@ -40,19 +40,31 @@ async def async_client() -> AsyncClient:
 # ---------------------------------------------------------------------------
 
 
-def _make_handler_class(directory: str) -> type[http.server.SimpleHTTPRequestHandler]:
-    """Return a SimpleHTTPRequestHandler subclass rooted at *directory*."""
+def _make_handler_class(
+    directory: str,
+    *,
+    cors_wildcard: bool = False,
+) -> type[http.server.SimpleHTTPRequestHandler]:
+    """Return a SimpleHTTPRequestHandler subclass rooted at *directory*.
+
+    When *cors_wildcard* is True, the handler adds permissive CORS headers to
+    every response, simulating a misconfigured server.  The clean server uses
+    the default (False) so that header-detection tests only fire on the
+    vulnerable server.
+    """
     abs_dir = os.path.abspath(directory)
+    add_cors = cors_wildcard  # captured by closure
 
     class _Handler(http.server.SimpleHTTPRequestHandler):
         def __init__(self, *args: object, **kwargs: object) -> None:
             super().__init__(*args, directory=abs_dir, **kwargs)
 
         def end_headers(self) -> None:
-            # Permissive CORS on the vulnerable server (realistic misconfiguration)
-            self.send_header("Access-Control-Allow-Origin", "*")
-            self.send_header("Access-Control-Allow-Methods", "GET, HEAD, OPTIONS")
-            self.send_header("Access-Control-Allow-Headers", "*")
+            if add_cors:
+                # Permissive CORS — realistic misconfiguration on the vulnerable server.
+                self.send_header("Access-Control-Allow-Origin", "*")
+                self.send_header("Access-Control-Allow-Methods", "GET, HEAD, OPTIONS")
+                self.send_header("Access-Control-Allow-Headers", "*")
             super().end_headers()
 
         def log_message(self, *args: object, **kwargs: object) -> None:
@@ -72,7 +84,12 @@ def _start_server(directory: str, port: int) -> http.server.HTTPServer:
 @pytest.fixture(scope="session")
 def vulnerable_server() -> Generator[str, None, None]:
     """Serve tests/fixtures/vulnerable_app on port 8001. Yields base URL."""
-    server = _start_server("tests/fixtures/vulnerable_app", 8001)
+    # Pass cors_wildcard=True so the vulnerable server reflects the CORS misconfiguration
+    # that header-detection tests assert on.
+    handler_cls = _make_handler_class("tests/fixtures/vulnerable_app", cors_wildcard=True)
+    server = http.server.HTTPServer(("127.0.0.1", 8001), handler_cls)
+    thread = threading.Thread(target=server.serve_forever, daemon=True)
+    thread.start()
     yield "http://127.0.0.1:8001"
     server.shutdown()
 
@@ -93,10 +110,11 @@ def clean_server() -> Generator[str, None, None]:
 # ---------------------------------------------------------------------------
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture
 def allow_private_targets() -> Generator[None, None, None]:
-    """Enable ALLOW_PRIVATE_TARGETS for the test session so safe_fetch can
-    reach localhost fixture servers."""
+    """Enable ALLOW_PRIVATE_TARGETS for one test so safe_fetch can reach
+    localhost fixture servers.  Function-scoped so SSRF tests are never
+    contaminated by this bypass."""
     from app.config import get_settings
 
     prev = os.environ.get("ALLOW_PRIVATE_TARGETS")

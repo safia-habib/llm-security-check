@@ -1,4 +1,5 @@
 from enum import StrEnum
+from urllib.parse import urlparse
 
 from pydantic import BaseModel, field_validator
 
@@ -34,6 +35,17 @@ class ScanRequest(BaseModel):
     target_url: str
     owns_target: bool
     include_third_party: bool = False
+
+    @field_validator("target_url")
+    @classmethod
+    def validate_url(cls, v: str) -> str:
+        v = v.strip()
+        parsed = urlparse(v)
+        if parsed.scheme not in ("http", "https"):
+            raise ValueError("target_url must start with http:// or https://")
+        if not parsed.netloc:
+            raise ValueError("target_url must include a hostname")
+        return v
 
     @field_validator("owns_target")
     @classmethod
@@ -125,6 +137,7 @@ class ScanReport(BaseModel):
     not_checked: list[str] = []
     pages_crawled: int = 0
     assets_scanned: int = 0
+    errors: list[str] = []
 
 
 class RejectionResponse(BaseModel):

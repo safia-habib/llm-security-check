@@ -1,0 +1,13 @@
+.venv/
+.env
+.git/
+.gitignore
+.ruff_cache/
+.pytest_cache/
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+tests/
+PLAN.md
+agents.md
