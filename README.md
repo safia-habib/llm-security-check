@@ -56,7 +56,7 @@ This tool has deliberate, hard limits. A clean report is **not** a guarantee of 
 
 ```bash
 # Clone the repo
-git clone https://github.com/placeholder/llm-security-check
+git clone https://github.com/safia_habib/llm-security-check
 cd llm-security-check
 
 # Install with uv
