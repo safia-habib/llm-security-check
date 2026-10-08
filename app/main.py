@@ -12,6 +12,7 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import ValidationError
 
 from app import store as scan_store
+from app.audit import log_scan_queued, setup_audit_log
 from app.config import get_settings, warn_if_unsafe
 from app.detect.rules import RULES
 from app.models import (
@@ -126,7 +127,13 @@ def _client_ip(request: Request) -> str:
 async def _lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     settings = get_settings()
     warn_if_unsafe(settings)
-    logger.info("LLM Security Check v%s starting on port %d", VERSION, settings.port)
+    setup_audit_log(settings.scan_log_file)
+    logger.info(
+        "LLM Security Check v%s starting on port %d (audit log → %s)",
+        VERSION,
+        settings.port,
+        settings.scan_log_file,
+    )
     yield
     logger.info("LLM Security Check shutting down")
 
@@ -251,6 +258,7 @@ async def start_scan(request: Request) -> JSONResponse:
         run_scan(entry, scan_req.target_url, scan_req.include_third_party)
     )
     entry.task = task
+    log_scan_queued(scan_id, client_ip, scan_req.target_url)
 
     return JSONResponse(
         status_code=202,

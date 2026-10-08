@@ -24,6 +24,7 @@ class Settings(BaseSettings):
     user_agent: str = (
         "LLMSecurityCheck/1.0 (+https://github.com/safia_habib/llm-security-check)"
     )
+    scan_log_file: str = "scan_audit.log"
 
 
 @lru_cache

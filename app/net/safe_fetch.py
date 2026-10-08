@@ -22,6 +22,7 @@ from urllib.parse import urljoin, urlparse
 
 import httpx
 
+from app.audit import log_url_fetched
 from app.config import get_settings
 
 logger = logging.getLogger(__name__)
@@ -237,12 +238,14 @@ async def safe_fetch(url: str, *, method: str = "GET") -> FetchResult:
 
             # Non-redirect: read the body (empty for HEAD)
             content = b"" if method.upper() == "HEAD" else await _read_limited(response)
-            return FetchResult(
+            result = FetchResult(
                 url=str(response.url),
                 status_code=response.status_code,
                 headers=dict(response.headers),
                 content=content,
             )
+            log_url_fetched(result.url, method, result.status_code)
+            return result
 
 
 async def safe_head(url: str) -> FetchResult:

@@ -14,6 +14,7 @@ import datetime
 import logging
 
 from app import store as scan_store
+from app.audit import current_scan_id, log_scan_done
 from app.config import get_settings
 from app.detect.architecture import detect_architecture
 from app.detect.secrets import detect_secrets
@@ -46,6 +47,7 @@ async def run_scan(
     include_third_party: bool,
 ) -> None:
     """Execute the full scan pipeline and update *entry* in place."""
+    current_scan_id.set(entry.scan_id)
     settings = get_settings()
     started_at = _now()
     entry.status = ScanStatus.running
@@ -151,13 +153,16 @@ async def run_scan(
             summary.score,
             len(enriched),
         )
+        log_scan_done(entry.scan_id, "complete", summary.grade, len(enriched), duration)
 
     except TimeoutError:
         entry.status = ScanStatus.failed
         _push(entry, "failed", message="Scan timed out")
         logger.warning("Scan %s timed out", entry.scan_id)
+        log_scan_done(entry.scan_id, "timeout", None, 0, (_now() - started_at).total_seconds())
 
     except Exception:
         entry.status = ScanStatus.failed
         _push(entry, "failed", message="Scan failed due to an internal error")
         logger.exception("Scan %s failed", entry.scan_id)
+        log_scan_done(entry.scan_id, "failed", None, 0, (_now() - started_at).total_seconds())
